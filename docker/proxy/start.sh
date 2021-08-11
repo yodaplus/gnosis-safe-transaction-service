@@ -1,0 +1,2 @@
+cd proxy
+yarn start

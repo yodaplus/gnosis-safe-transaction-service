@@ -1,4 +1,4 @@
-version: '3.5'
+version: "3.5"
 
 volumes:
   nginx-shared:
@@ -27,6 +27,17 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
 
+  proxy:
+    build:
+      context: .
+      dockerfile: docker/proxy/Dockerfile
+    working_dir: /app
+    ports:
+      - "8083:8083"
+    volumes:
+      - .:/app
+    command: docker/proxy/start.sh
+
   web:
     build:
       context: .
@@ -36,11 +47,13 @@ services:
     depends_on:
       - db
       - redis
+      - proxy
     working_dir: /app
     ports:
       - "8888:8888"
     volumes:
       - nginx-shared:/nginx
+      - .:/app
     command: docker/web/run_web.sh
 
   worker: &worker
@@ -52,9 +65,11 @@ services:
     depends_on:
       - db
       - redis
+      - proxy
+    volumes:
+      - .:/app
     command: docker/web/celery/worker/run.sh
 
   scheduler:
     <<: *worker
     command: docker/web/celery/scheduler/run.sh
-

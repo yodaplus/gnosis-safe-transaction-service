@@ -31,6 +31,7 @@ class EthereumIndexer(ABC):
     So the flow would be `start()` -> `process_addresses` -> `find_revelant_elements` -> `process_elements` ->
     `process_element`
     """
+
     def __init__(self, ethereum_client: EthereumClient,
                  confirmations: int = 1,
                  block_process_limit: int = 2000,
@@ -269,7 +270,7 @@ class EthereumIndexer(ABC):
             almost_updated_monitored_addresses_chunks = chunks(almost_updated_monitored_addresses,
                                                                self.query_chunk_size)
         else:
-            almost_updated_monitored_addresses_chunks = almost_updated_monitored_addresses
+            almost_updated_monitored_addresses_chunks = [almost_updated_monitored_addresses] if almost_updated_monitored_addresses else []
         if almost_updated_monitored_addresses:
             logger.info('%s: Processing %d almost updated addresses',
                         self.__class__.__name__, len(almost_updated_monitored_addresses))
