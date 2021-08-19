@@ -118,6 +118,9 @@ class PriceService:
             except CannotGetPrice:
                 return self.coingecko_client.get_ewt_usd_price()
 
+    def get_xdc_usd_price(self) -> float:
+        return self.kucoin_client.get_xdc_usd_price()
+
     def get_matic_usd_price(self) -> float:
         try:
             return self.kraken_client.get_matic_usd_price()
@@ -149,6 +152,8 @@ class PriceService:
             return self.get_matic_usd_price()
         elif self.ethereum_network == EthereumNetwork.BINANCE:
             return self.get_binance_usd_price()
+        elif self.ethereum_network in (EthereumNetwork.XINFIN, EthereumNetwork.APOTHEM):
+            return self.get_xdc_usd_price()
         else:
             try:
                 return self.kraken_client.get_eth_usd_price()
