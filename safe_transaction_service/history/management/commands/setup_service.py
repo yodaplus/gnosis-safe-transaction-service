@@ -64,12 +64,18 @@ TASKS = [
 MASTER_COPIES: Dict[EthereumNetwork, List[Tuple[str, int, str]]] = {
     EthereumNetwork.APOTHEM: [
         ('0xa73db6fc68A22da7774369FA0e43d507679C62BB', 21844862, '1.3.0+L2'),
+    ],
+    EthereumNetwork.XINFIN: [
+        ('0xd9085820afEECf5C29F25527247Afe19765c4b2b', 34047681, '1.3.0+L2'),
     ]
 }
 
 PROXY_FACTORIES: Dict[EthereumNetwork, List[Tuple[str, int]]] = {
     EthereumNetwork.APOTHEM: [
         ('0xEa79c1354B319E867A024f399405148F772aeB3b', 21917812),  # v1.3.0
+    ],
+    EthereumNetwork.XINFIN: [
+        ('0xc9C473A60b757d7c2a28fb158D6Bf5C638bA078c', 34047677),  # v1.3.0
     ]
 }
 

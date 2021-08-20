@@ -1,11 +1,17 @@
-var proxy = require("express-http-proxy");
-var express = require("express");
-var app = express();
-var cors = require("cors");
+const express = require("express");
+
+const {
+  createProxyMiddleware,
+  responseInterceptor,
+  fixRequestBody,
+} = require("http-proxy-middleware");
+
+const app = express();
+const cors = require("cors");
 
 const PORT = process.env.PORT || 8083;
 const DEBUG = process.env.DEBUG === "true" ? true : false;
-const URL = "http://rpc.apothem.network";
+const URL = process.env.URL || "http://rpc.apothem.network";
 
 app.use(express.json());
 app.use(cors());
@@ -38,8 +44,14 @@ const traverseObjRec = (obj) => {
 
 app.use(
   "/",
-  proxy(URL, {
-    proxyReqBodyDecorator: (bodyContent, srcReq) => {
+  createProxyMiddleware({
+    target: URL,
+    selfHandleResponse: true,
+    secure: false,
+    changeOrigin: true,
+    onProxyReq: (proxyReq, req, res) => {
+      const bodyContent = req.body;
+
       if (
         ["eth_getTransactionCount", "eth_call"].includes(bodyContent.method) &&
         bodyContent.params[1] === "pending"
@@ -47,20 +59,27 @@ app.use(
         bodyContent.params[1] = "latest";
       }
 
-      return JSON.stringify(bodyContent);
+      return fixRequestBody(proxyReq, req, res);
     },
-    userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
-      const resStr = proxyResData.toString("utf8");
+    onProxyRes: responseInterceptor(
+      async (responseBuffer, proxyRes, req, res) => {
+        const resStr = responseBuffer.toString("utf8");
 
-      if (DEBUG) {
-        console.log("req", userReq.body);
-        console.log("res", resStr);
+        if (DEBUG) {
+          console.log("req", JSON.stringify(req.body));
+          console.log("res", resStr);
+        }
+
+        let data;
+        try {
+          data = JSON.parse(resStr);
+        } catch (e) {
+          data = {};
+        }
+
+        return JSON.stringify(traverseObjRec(data));
       }
-
-      data = JSON.parse(resStr);
-
-      return JSON.stringify(traverseObjRec(data));
-    },
+    ),
   })
 );
 
