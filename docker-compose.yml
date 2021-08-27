@@ -16,7 +16,9 @@ services:
       - web
 
   redis:
-    image: redis:alpine
+    build:
+      context: .
+      dockerfile: docker/redis/Dockerfile
     ports:
       - "6379:6379"
 
@@ -36,8 +38,6 @@ services:
       - "8083:8083"
     volumes:
       - .:/app
-    environment:
-      URL: https://rpc.xinfin.network
     command: docker/proxy/start.sh
 
   web:
