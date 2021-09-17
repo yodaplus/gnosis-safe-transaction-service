@@ -17,7 +17,7 @@ from gnosis.eth import EthereumClient, EthereumClientProvider
 from safe_transaction_service.tokens.clients import CannotGetPrice
 from safe_transaction_service.tokens.models import Token
 from safe_transaction_service.tokens.services.price_service import (
-    FiatCode, PriceService, PriceServiceProvider)
+    FiatCode, PriceService, PriceServiceProvider, Erc20InfoWithLogo)
 from safe_transaction_service.utils.redis import get_redis
 
 from ..exceptions import NodeConnectionException
@@ -28,23 +28,6 @@ logger = logging.getLogger(__name__)
 
 class BalanceServiceException(Exception):
     pass
-
-
-@dataclass
-class Erc20InfoWithLogo:
-    address: ChecksumAddress
-    name: str
-    symbol: str
-    decimals: int
-    logo_uri: str
-
-    @classmethod
-    def from_token(cls, token: Token):
-        return cls(token.address,
-                   token.name,
-                   token.symbol,
-                   token.decimals,
-                   token.get_full_logo_uri())
 
 
 @dataclass
@@ -146,18 +129,8 @@ class BalanceService:
             balances.append(Balance(**balance))
         return balances
 
-    @cachedmethod(cache=operator.attrgetter('cache_token_info'))
-    @cache_memoize(60 * 60, prefix='balances-get_token_info')  # 1 hour
     def get_token_info(self, token_address: ChecksumAddress) -> Optional[Erc20InfoWithLogo]:
-        try:
-            token = Token.objects.get(address=token_address)
-            return Erc20InfoWithLogo.from_token(token)
-        except Token.DoesNotExist:
-            if token := Token.objects.create_from_blockchain(token_address):
-                return Erc20InfoWithLogo.from_token(token)
-            else:
-                logger.warning('Cannot get erc20 token info for token-address=%s', token_address)
-                return None
+        return PriceService.get_token_info(self, token_address)
 
     def get_usd_balances(self, safe_address: ChecksumAddress, only_trusted: bool = False,
                          exclude_spam: bool = False) -> List[BalanceWithFiat]:

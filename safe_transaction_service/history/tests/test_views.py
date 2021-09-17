@@ -21,7 +21,7 @@ from gnosis.safe.signatures import signature_to_bytes
 from gnosis.safe.tests.safe_test_case import SafeTestCaseMixin
 
 from safe_transaction_service.tokens.models import Token
-from safe_transaction_service.tokens.services.price_service import PriceService
+from safe_transaction_service.tokens.services.price_service import PriceService, Erc20InfoWithLogo
 from safe_transaction_service.tokens.tests.factories import TokenFactory
 
 from ..exceptions import NodeConnectionException
@@ -30,7 +30,6 @@ from ..models import (MultisigConfirmation, MultisigTransaction,
                       SafeContractDelegate)
 from ..serializers import TransferType
 from ..services import BalanceService, CollectiblesService, SafeService
-from ..services.balance_service import Erc20InfoWithLogo
 from ..services.collectibles_service import CollectibleWithMetadata
 from .factories import (EthereumEventFactory, EthereumTxFactory,
                         InternalTxFactory, ModuleTransactionFactory,

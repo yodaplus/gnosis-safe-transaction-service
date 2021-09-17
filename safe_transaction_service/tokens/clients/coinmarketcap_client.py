@@ -6,6 +6,9 @@ from urllib.parse import urljoin
 
 import requests
 from eth_utils import to_checksum_address
+from eth_typing import ChecksumAddress
+
+from safe_transaction_service.tokens.clients.exceptions import CannotGetPrice
 
 logger = logging.getLogger(__name__)
 
@@ -92,3 +95,23 @@ class CoinMarketCapClient:
                                    token['name'], token['id'])
 
         return tokens
+
+    def get_token_price(self, token_symbol: str) -> float:
+        """
+        :param token_symbol:
+        :return: usd price for token symbol, 0. if not found
+        """
+        url = urljoin(self.base_url, f'v1/cryptocurrency/quotes/latest')
+        parameters = {
+            'symbol': token_symbol,
+        }
+        response = self.http_session.get(url, headers=self.headers, params=parameters, timeout=10)
+
+        if not response.ok:
+            raise CannotGetPrice(url)
+        response_json = response.json()
+        if response_json['status']['error_code'] != 0:
+            raise CannotGetPrice(response_json['status']['error_message'])
+
+        price = response_json['data'][token_symbol]['quote']['USD']['price']
+        return price

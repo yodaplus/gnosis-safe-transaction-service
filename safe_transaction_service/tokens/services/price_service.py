@@ -5,6 +5,7 @@ from enum import Enum
 from functools import cached_property
 from typing import Iterator, List, Optional, Sequence, Tuple
 
+from django.conf import settings
 from django.utils import timezone
 
 from cache_memoize import cache_memoize
@@ -26,8 +27,9 @@ from gnosis.eth.oracles import (AaveOracle, BalancerOracle,
 from safe_transaction_service.utils.redis import get_redis
 
 from ..clients import (BinanceClient, CannotGetPrice, CoingeckoClient,
-                       KrakenClient, KucoinClient)
+                       KrakenClient, KucoinClient, CoinMarketCapClient)
 from ..tasks import EthValueWithTimestamp, calculate_token_eth_price_task
+from safe_transaction_service.tokens.models import Token
 
 logger = get_task_logger(__name__)
 
@@ -35,6 +37,23 @@ logger = get_task_logger(__name__)
 class FiatCode(Enum):
     USD = 1
     EUR = 2
+
+
+@dataclass
+class Erc20InfoWithLogo:
+    address: ChecksumAddress
+    name: str
+    symbol: str
+    decimals: int
+    logo_uri: str
+
+    @classmethod
+    def from_token(cls, token: Token):
+        return cls(token.address,
+                   token.name,
+                   token.symbol,
+                   token.decimals,
+                   token.get_full_logo_uri())
 
 
 @dataclass
@@ -61,6 +80,7 @@ class PriceService:
         self.ethereum_client = ethereum_client
         self.ethereum_network = self.ethereum_client.get_network()
         self.redis = redis
+        self.coin_market_cap_client = CoinMarketCapClient(settings.COIN_MARKET_CAP_API_KEY)
         self.binance_client = BinanceClient()
         self.coingecko_client = CoingeckoClient()
         self.curve_oracle = CurveOracle(self.ethereum_client)
@@ -129,6 +149,19 @@ class PriceService:
                 return self.binance_client.get_matic_usd_price()
             except CannotGetPrice:
                 return self.coingecko_client.get_matic_usd_price()
+
+    @cachedmethod(cache=operator.attrgetter('cache_token_info'))
+    @cache_memoize(60 * 60, prefix='balances-get_token_info')  # 1 hour
+    def get_token_info(self, token_address: ChecksumAddress) -> Optional[Erc20InfoWithLogo]:
+        try:
+            token = Token.objects.get(address=token_address)
+            return Erc20InfoWithLogo.from_token(token)
+        except Token.DoesNotExist:
+            if token := Token.objects.create_from_blockchain(token_address):
+                return Erc20InfoWithLogo.from_token(token)
+            else:
+                logger.warning('Cannot get erc20 token info for token-address=%s', token_address)
+                return None
 
     @cachedmethod(cache=operator.attrgetter('cache_eth_price'))
     @cache_memoize(60 * 30, prefix='balances-get_eth_usd_price')  # 30 minutes
@@ -201,6 +234,16 @@ class PriceService:
                 return self.coingecko_client.get_token_price(token_address)
             except CannotGetPrice:
                 pass
+
+        if self.ethereum_network in [EthereumNetwork.APOTHEM, EthereumNetwork.XINFIN]:
+            try:
+                token_info = self.get_token_info(token_address)
+                if token_info == None:
+                    raise CannotGetPrice(f'Cannot get token info for {token_address}')
+                return self.coin_market_cap_client.get_token_price(token_info.symbol)
+            except CannotGetPrice:
+                pass
+
         return 0.
 
     @cachedmethod(cache=operator.attrgetter('cache_underlying_token'))
