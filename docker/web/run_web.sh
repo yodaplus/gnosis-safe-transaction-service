@@ -17,5 +17,8 @@ cp -r staticfiles/ $DOCKER_SHARED_DIR/
 echo "==> $(date +%H:%M:%S) ==> Send via Slack info about service version and network"
 python manage.py send_slack_notification &
 
+echo "==> $(date +%H:%M:%S) ==> Creating superuser if it doesn't exist"
+python manage.py createsuperuser --noinput || true
+
 echo "==> $(date +%H:%M:%S) ==> Running Gunicorn... "
 exec gunicorn --config gunicorn.conf.py --pythonpath "$PWD" -b unix:$DOCKER_SHARED_DIR/gunicorn.socket -b 0.0.0.0:8888 config.wsgi:application
