@@ -4,4 +4,4 @@ WORKDIR /app
 
 COPY . .
 
-RUN yarn
+RUN cd proxy && yarn
