@@ -57,6 +57,7 @@ services:
     volumes:
       - nginx-shared:/nginx
       - .:/app
+      - /app/staticfiles/
     command: docker/web/run_web.sh
 
   worker: &worker
