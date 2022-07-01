@@ -39,6 +39,8 @@ services:
     volumes:
       - .:/app
       - /app/proxy/node_modules/
+    environment:
+      URL: https://apothemxdcpayrpc.blocksscan.io
     command: docker/proxy/start.sh
 
   web:

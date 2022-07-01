@@ -65,6 +65,8 @@ app.use(
       async (responseBuffer, proxyRes, req, res) => {
         const resStr = responseBuffer.toString("utf8");
 
+        res.setHeader("access-control-allow-origin", "*");
+
         if (DEBUG) {
           console.log("req", JSON.stringify(req.body));
           console.log("res", resStr);
