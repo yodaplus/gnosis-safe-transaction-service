@@ -3,6 +3,12 @@
 ![Python 3.9](https://img.shields.io/badge/Python-3.9-blue.svg)
 ![Django 3](https://img.shields.io/badge/Django-3-blue.svg)
 
+# XinFin-related notes
+
+This repo was forked from Gnosis for the purpose of XinFin depoyment. 
+
+
+
 # Gnosis Transaction Service
 Keeps track of transactions sent via Gnosis Safe contracts. It uses events and
 [tracing](https://openethereum.github.io/JSONRPC-trace-module) to index the txs.
